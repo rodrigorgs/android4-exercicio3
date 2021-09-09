@@ -5,6 +5,8 @@ import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.espresso.Espresso;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -12,6 +14,7 @@ import androidx.test.filters.LargeTest;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +28,6 @@ import static androidx.test.espresso.action.ViewActions.clearText;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
@@ -41,11 +42,21 @@ public class CorrecaoTest {
     @Rule
     public ActivityScenarioRule<MainActivity> mActivityRule = new ActivityScenarioRule<>(
             MainActivity.class);
+    private View decorView;
 
-    public void checaToast(String msg) {
-        mActivityRule.getScenario().onActivity(activity -> {
-            onView(withText(msg)).inRoot(withDecorView(not(is(activity.getWindow().getDecorView())))).check(matches(isDisplayed()));
+    @Before
+    public void setUp() {
+        mActivityRule.getScenario().onActivity(new ActivityScenario.ActivityAction<MainActivity>() {
+            @Override
+            public void perform(MainActivity activity) {
+                decorView = activity.getWindow().getDecorView();
+            }
         });
+    }
+
+    public void checaStatus(String msg) {
+        onView(withId(R.id.tvStatus))
+                .check(matches(withText(msg)));
     }
 
     public void checaTamanhoDaLista(int size) {
@@ -63,7 +74,6 @@ public class CorrecaoTest {
                 .perform(clearText());
         onView(withId(R.id.editPrioridade))
                 .perform(clearText());
-
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -76,16 +86,17 @@ public class CorrecaoTest {
                 .check(matches(withText("")));
         onView(withId(R.id.buttonRemover))
                 .check(matches(not(isEnabled())));
+        checaStatus("");
     }
 
     @Test
     public void prioridadeInvalida() {
         insereTarefa("abc", "11");
-        checaToast("A prioridade deve estar entre 1 e 10.");
+        checaStatus("A prioridade deve estar entre 1 e 10.");
         checaTamanhoDaLista(0);
 
         insereTarefa("abc", "0");
-        checaToast("A prioridade deve estar entre 1 e 10.");
+        checaStatus("A prioridade deve estar entre 1 e 10.");
         checaTamanhoDaLista(0);
     }
 
@@ -96,6 +107,8 @@ public class CorrecaoTest {
         new ListBuilder()
                 .withItem("abc", "Prioridade: 5")
                 .check();
+
+        checaStatus("");
     }
 
     @Test
@@ -128,6 +141,8 @@ public class CorrecaoTest {
                 .withItem("b", "Prioridade: 6")
                 .withItem("c", "Prioridade: 9")
                 .check();
+
+        checaStatus("");
     }
 
     @Test
@@ -141,6 +156,8 @@ public class CorrecaoTest {
                 .withItem("b", "Prioridade: 6")
                 .withItem("c", "Prioridade: 9")
                 .check();
+
+        checaStatus("");
     }
 
     @Test
@@ -152,6 +169,8 @@ public class CorrecaoTest {
                 .withItem("c", "Prioridade: 5")
                 .withItem("b", "Prioridade: 5")
                 .check();
+
+        checaStatus("");
     }
 
     @Test
@@ -165,6 +184,8 @@ public class CorrecaoTest {
                 .withItem("b", "Prioridade: 5")
                 .withItem("a", "Prioridade: 6")
                 .check();
+
+        checaStatus("");
     }
 
     @Test
@@ -172,7 +193,7 @@ public class CorrecaoTest {
         insereTarefa("programar", "9");
         insereTarefa("programar", "6");
 
-        checaToast("Tarefa já cadastrada.");
+        checaStatus("Tarefa já cadastrada.");
         new ListBuilder()
                 .withItem("programar", "Prioridade: 9")
                 .check();
@@ -184,6 +205,8 @@ public class CorrecaoTest {
         insereTarefa("b", "6");
         insereTarefa("a", "1");
         insereTarefa("z", "2");
+
+        Espresso.closeSoftKeyboard();
 
         onData(allOf(is(instanceOf(Tarefa.class))))
                 .inAdapterView(withId(R.id.listView))
